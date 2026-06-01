@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linux Networking Stack / Tunable Reference</title>
+<!-- fully self-contained: no external font requests. fonts resolve from your
+     locally installed families (Nerd Fonts / plain) with generic fallbacks. -->
+<style>
+/* ============================================================================
+   linux networking stack :: tunable reference map
+   typographic-spec-sheet treatment. hairline panels, dotted leaders, one accent.
+   fonts are referenced from local installs only (no network). the cycler offers
+   Hack / Fira Code / JetBrains / IBM Plex / 3270 / system, each a fallback stack.
+   to hard-embed a face for cross-machine portability, add an @font-face here
+   (base64 woff2) and prepend its family to --mono.
+   ========================================================================== */
+:root{
+  --bg:#0e0f11;
+  --panel:#15161a;
+  --panel-2:#191b20;
+  --line:#262830;
+  --line-2:#363943;
+  --ink:#dcdad3;
+  --ink-mid:#9a9b93;
+  --ink-dim:#6f7169;
+  --accent:#e0863c;          /* signal amber  -- structure / brand */
+  --accent-soft:#e0863c2a;
+  --accent2:#5fc2ad;         /* secondary teal -- variable values you tune */
+  --rx:#7fb4c4;              /* ingress / cool */
+  --tx:#dd9a63;             /* egress / warm */
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  /* body mono: prefers your installed coding fonts (Nerd Font or plain), then generic */
+  --mono:"Hack Nerd Font Mono","Hack Nerd Font","Hack","FiraCode Nerd Font Mono","Fira Code","JetBrainsMono Nerd Font","JetBrains Mono",ui-monospace,"SFMono-Regular","Cascadia Code",Menlo,Consolas,monospace;
+  /* display face: your locally installed 3270 Nerd Font, with mono fallback */
+  --display:"3270 Nerd Font Propo","3270 Nerd Font","3270",ui-monospace,Menlo,Consolas,monospace;
+}
+[data-theme="phosphor"]{
+  --bg:#0c0f0d; --panel:#121613; --panel-2:#161b17; --line:#232a25; --line-2:#333d35;
+  --ink:#d6ddd3; --ink-mid:#919a8f; --ink-dim:#697066;
+  --accent:#7bbd8e; --accent-soft:#7bbd8e26; --accent2:#d8b466; --rx:#86c2b4; --tx:#cdbd7e;
+}
+[data-theme="slate"]{
+  --bg:#0b0e12; --panel:#11151b; --panel-2:#151a21; --line:#222a34; --line-2:#33404d;
+  --ink:#d4dae1; --ink-mid:#8f99a4; --ink-dim:#69727c;
+  --accent:#5fa8cc; --accent-soft:#5fa8cc26; --accent2:#e0a35c; --rx:#7fbdd4; --tx:#d0a06e;
+}
+[data-theme="iris"]{
+  --bg:#0e0c14; --panel:#15131d; --panel-2:#1a1724; --line:#2a2638; --line-2:#3b3550;
+  --ink:#dad6e6; --ink-mid:#9a93ad; --ink-dim:#6f6885;
+  --accent:#a98cf0; --accent-soft:#a98cf026; --accent2:#6fccc0; --rx:#8fb6ee; --tx:#d79ad6;
+}
+[data-theme="rose"]{
+  --bg:#120d10; --panel:#1a1417; --panel-2:#201920; --line:#332530; --line-2:#48343f;
+  --ink:#e6d8df; --ink-mid:#ab919d; --ink-dim:#856875;
+  --accent:#e08aa6; --accent-soft:#e08aa626; --accent2:#d9b06a; --rx:#b79ad6; --tx:#e0a07e;
+}
+*{box-sizing:border-box}
+html{scrollbar-color:var(--line-2) var(--bg)}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--mono); font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+::selection{background:var(--accent-soft)}
+
+/* ---- masthead ------------------------------------------------------------ */
+.mast{max-width:1180px; margin:0 auto; padding:40px 28px 0}
+.mast-top{display:flex; align-items:flex-start; justify-content:space-between; gap:30px; flex-wrap:wrap}
+.mast h1{
+  font-family:var(--display); font-weight:700; font-size:34px; line-height:1.04;
+  margin:0; letter-spacing:.01em; color:var(--ink);
+}
+.mast h1 .thin{display:block; font-weight:400; font-size:14.5px; letter-spacing:.02em; color:var(--ink-mid); margin-top:11px; font-family:var(--mono)}
+.mast-right{display:flex; flex-direction:column; align-items:flex-end; gap:14px}
+.mast-meta{font-family:var(--mono); font-size:11.5px; line-height:1.85; color:var(--ink-dim); text-align:right; min-width:220px}
+.mast-meta .row{display:flex; justify-content:space-between; gap:18px}
+.mast-meta .k{color:var(--ink-dim)}
+.mast-meta .v{color:var(--ink-mid)}
+.mast-meta .v .accent2{color:var(--accent2)}
+.mast-links{display:flex; flex-direction:column; align-items:flex-end; gap:3px; text-align:right}
+.mast-links a{
+  font-family:var(--display); font-size:18px; letter-spacing:.04em;
+  color:var(--ink-mid); text-decoration:none; transition:.13s; line-height:1.25;
+}
+.mast-links a::before{content:"// "; color:var(--ink-dim)}
+.mast-links a:hover{color:var(--accent)}
+.mast-links a:hover::before{color:var(--accent2)}
+
+/* subtle icon-only theme + font switcher, top right */
+.switcher{display:flex; align-items:center; gap:12px}
+.sw-themes{display:flex; align-items:center; gap:8px}
+.sw-themes button{
+  width:14px; height:14px; padding:0; border-radius:50%; cursor:pointer;
+  background:var(--c); border:1px solid #0000; opacity:.45; transition:.14s;
+  box-shadow:0 0 0 1px #ffffff14 inset;
+}
+.sw-themes button:hover{opacity:.85}
+.sw-themes button.on{opacity:1; box-shadow:0 0 0 2px var(--bg), 0 0 0 3px var(--c)}
+.sw-div{width:1px; height:16px; background:var(--line-2)}
+.sw-font{
+  font-family:var(--mono); font-size:13px; font-weight:600; line-height:1;
+  color:var(--ink-mid); background:transparent; border:1px solid var(--line-2);
+  border-radius:3px; padding:3px 8px; cursor:pointer; transition:.14s; min-width:34px;
+}
+.sw-font:hover{color:var(--ink); border-color:var(--accent)}
+.rule{max-width:1180px; margin:22px auto 0; padding:0 28px}
+.rule .bar{height:3px; background:var(--accent)}
+.rule .bar::after{content:""; display:block; height:1px; background:var(--line); margin-top:5px}
+
+/* ---- controls ------------------------------------------------------------ */
+.bar-controls{max-width:1180px; margin:18px auto 0; padding:0 28px; display:flex; flex-wrap:wrap; align-items:center; gap:22px}
+.grp{display:flex; align-items:center; gap:10px}
+.grp > .lab{font-family:var(--mono); font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-dim)}
+.seg{display:inline-flex; border:1px solid var(--line-2); border-radius:3px; overflow:hidden}
+.seg button{
+  font-family:var(--mono); font-size:12px; letter-spacing:.04em;
+  color:var(--ink-mid); background:transparent; border:0; border-right:1px solid var(--line-2);
+  padding:5px 13px; cursor:pointer; transition:.13s;
+}
+.seg button:last-child{border-right:0}
+.seg button:hover{color:var(--ink)}
+.seg button.on{background:var(--accent); color:#15161a; font-weight:600}
+[data-theme="phosphor"] .seg button.on,[data-theme="slate"] .seg button.on{color:#0e0f11}
+.dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:2px; vertical-align:middle}
+.dot.rx{background:var(--rx)} .dot.tx{background:var(--tx)}
+.find{
+  font-family:var(--mono); font-size:12px; color:var(--ink);
+  background:var(--panel); border:1px solid var(--line-2); border-radius:3px;
+  padding:5px 10px; width:180px; outline:none;
+}
+.find:focus{border-color:var(--accent)}
+.find::placeholder{color:var(--ink-dim)}
+
+/* ---- layout -------------------------------------------------------------- */
+.wrap{max-width:1180px; margin:26px auto 0; padding:0 28px 90px; display:grid; grid-template-columns:1fr 360px; gap:34px; align-items:start}
+.stack{min-width:0}
+
+/* direction banner at the head of the flow */
+.flowhead{display:flex; align-items:baseline; justify-content:space-between; margin:0 0 6px; padding:0 2px}
+.flowhead .start{font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink)}
+.flowhead .meta{font-family:var(--mono); font-size:11px; color:var(--ink-dim)}
+
+/* ---- panels -------------------------------------------------------------- */
+.panel{border:1px solid var(--line); border-radius:5px; background:var(--panel); overflow:hidden}
+.phead{display:flex; align-items:center; gap:12px; padding:9px 14px; border-bottom:1px solid var(--line); background:var(--panel-2)}
+.idx{
+  font-family:var(--mono); font-size:11px; font-weight:600; color:var(--accent);
+  border:1px solid var(--line-2); border-radius:3px; padding:1px 7px; letter-spacing:.05em;
+  background:var(--bg);
+}
+.pname{font-family:var(--mono); font-size:12.5px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--ink)}
+.ptag{margin-left:auto; font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-dim)}
+.pcap{font-family:var(--mono); font-size:11.5px; color:var(--ink-dim); padding:9px 16px 3px; font-style:normal}
+.pbody{padding:5px 16px 12px}
+
+/* dotted-leader rows */
+.row{display:flex; align-items:baseline; gap:0; padding:3px 0; cursor:pointer; border-radius:3px; transition:background .1s}
+.row:hover,.row:focus,.row.active{background:var(--accent-soft); outline:none}
+.row .name{font-family:var(--mono); font-size:13px; color:var(--ink); white-space:nowrap; padding-left:2px}
+.row .name .pre{color:var(--ink-dim)}
+.row.rx .name{color:var(--rx)} .row.tx .name{color:var(--tx)}
+.row:hover .name,.row.active .name{color:var(--ink)}
+.row .lead{flex:1 1 auto; min-width:14px; align-self:center; margin:0 9px; border-bottom:1px dotted var(--line-2)}
+.row:hover .lead,.row.active .lead{border-bottom-color:var(--accent)}
+.row .meta{font-family:var(--mono); font-size:11.5px; color:var(--ink-dim); white-space:nowrap; padding-right:2px}
+.row:hover .meta,.row.active .meta{color:var(--ink-mid)}
+.varv{color:var(--accent2)}
+.row.hidden{display:none}
+.row.fade{opacity:.16}
+
+/* flow connector between panels */
+.flow{display:flex; align-items:center; gap:11px; padding:8px 0 8px 16px; min-height:30px}
+.flow .stem{width:1px; align-self:stretch; background:var(--line-2); margin-left:5px}
+.flow .chev{color:var(--accent); font-size:12px; line-height:1; margin-left:-6px}
+.flow .step{font-family:var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-dim)}
+.flow .step b{color:var(--ink-mid); font-weight:500}
+
+/* wire terminator */
+.wire{display:flex; align-items:center; gap:14px; padding:11px 4px}
+.wire .ln{flex:1; height:1px; background:linear-gradient(90deg,transparent,var(--line-2) 12%,var(--line-2) 88%,transparent)}
+.wire .tag{font-family:var(--mono); font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--ink-mid); white-space:nowrap}
+
+/* mascot -- pinned to the very bottom of the viewport, independent of the scroll */
+.mascot{position:fixed; right:16px; bottom:0; z-index:5; width:62px; height:auto; opacity:.92;
+  image-rendering:auto; filter:drop-shadow(0 2px 7px rgba(0,0,0,.5)); transition:.15s; cursor:default; pointer-events:auto}
+.mascot:hover{opacity:1; transform:translateY(-3px) rotate(-2deg)}
+
+/* ---- inspector ----------------------------------------------------------- */
+.inspector{position:sticky; top:24px; align-self:start}
+.insp-card{border:1px solid var(--line); border-radius:5px; background:var(--panel); overflow:hidden}
+.insp-head{padding:14px 16px 13px; border-bottom:1px solid var(--line); background:var(--panel-2)}
+.insp-head .eyebrow{font-family:var(--mono); font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:var(--ink-dim)}
+.insp-name{font-family:var(--mono); font-size:16px; font-weight:700; color:var(--ink); margin-top:7px; word-break:break-all; line-height:1.25}
+.tags{margin-top:10px; display:flex; gap:7px; flex-wrap:wrap}
+.tag{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-mid); border:1px solid var(--line-2); border-radius:3px; padding:2px 8px}
+.tag.dir-rx{color:var(--rx); border-color:var(--rx)}
+.tag.dir-tx{color:var(--tx); border-color:var(--tx)}
+.tag.dir-both{color:var(--accent); border-color:var(--accent)}
+.insp-body{padding:14px 16px 18px}
+.desc{font-family:var(--mono); font-size:12.5px; line-height:1.68; color:var(--ink)}
+.desc .why{display:block; margin-top:10px; color:var(--ink-mid)}
+.leadrow{display:flex; align-items:baseline; margin:16px 0 4px}
+.leadrow .k{font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-dim); white-space:nowrap}
+.leadrow .l{flex:1; margin:0 9px; border-bottom:1px dotted var(--line-2); transform:translateY(-3px)}
+.leadrow .v{font-family:var(--mono); font-size:12.5px; color:var(--accent2); white-space:nowrap; font-weight:500}
+.cmd{margin-top:12px}
+.cmd .k{font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-dim)}
+.cmd .v{font-family:var(--mono); font-size:12px; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-left:2px solid var(--accent); border-radius:0 3px 3px 0; padding:7px 10px; margin-top:5px; white-space:pre-wrap; word-break:break-word; line-height:1.5}
+.cmd .v .pmt{color:var(--ink-dim)}
+.insp-foot{padding:11px 16px; border-top:1px solid var(--line); font-family:var(--mono); font-size:10.5px; color:var(--ink-dim); letter-spacing:.04em}
+
+.hint{padding:4px 2px}
+.hint p{font-family:var(--mono); font-size:12.5px; line-height:1.7; color:var(--ink-mid); margin:0 0 14px}
+.hint kbd{font-family:var(--mono); font-size:11px; border:1px solid var(--line-2); border-radius:3px; padding:1px 6px; color:var(--ink)}
+.hint .u{text-decoration:underline dotted var(--line-2); text-underline-offset:3px; color:var(--ink)}
+.legend{margin-top:6px; border-top:1px solid var(--line); padding-top:14px}
+.legend .li{display:flex; gap:10px; align-items:baseline; font-family:var(--mono); font-size:11.5px; color:var(--ink-dim); line-height:1.7; margin-bottom:4px}
+.legend .sw{flex:0 0 auto; width:9px; height:9px; border-radius:2px; transform:translateY(1px)}
+
+footer{max-width:1180px; margin:0 auto; padding:0 28px 60px; font-family:var(--mono); font-size:11px; line-height:1.8; color:var(--ink-dim)}
+footer a{color:var(--ink-mid); text-decoration:underline dotted var(--line-2)}
+footer a:hover{color:var(--accent)}
+
+@media(max-width:1000px){
+  .wrap{grid-template-columns:1fr}
+  .inspector{position:fixed; left:0; right:0; bottom:0; top:auto; z-index:40; padding:0; max-height:54vh; overflow:auto; box-shadow:0 -16px 40px rgba(0,0,0,.55)}
+  .insp-card{border-radius:12px 12px 0 0; border-bottom:0}
+  .stack{padding-bottom:50vh}
+  .mast h1{font-size:24px}
+}
+</style>
+</head>
+<body>
+
+<div class="mast">
+  <div class="mast-top">
+    <h1>Linux Networking Stack
+      <span class="thin">Tunable Reference Map / wire &harr; read() &middot; write()</span>
+    </h1>
+    <div class="mast-right">
+      <div class="switcher">
+        <div class="sw-themes" id="themeseg" role="group" aria-label="theme">
+          <button data-theme-btn="graphite" class="on" style="--c:#e0863c" title="Graphite" aria-label="Graphite theme"></button>
+          <button data-theme-btn="phosphor" style="--c:#7bbd8e" title="Phosphor" aria-label="Phosphor theme"></button>
+          <button data-theme-btn="slate" style="--c:#5fa8cc" title="Slate" aria-label="Slate theme"></button>
+          <button data-theme-btn="iris" style="--c:#a98cf0" title="Iris" aria-label="Iris theme"></button>
+          <button data-theme-btn="rose" style="--c:#e08aa6" title="Rose" aria-label="Rose theme"></button>
+        </div>
+        <span class="sw-div"></span>
+        <button class="sw-font" id="fontbtn" title="Cycle typeface">Aa</button>
+      </div>
+      <div class="mast-links">
+        <a href="https://hed0rah.github.io/" target="_blank" rel="noopener">hed0rah.github.io</a>
+        <a href="https://x.com/r3l0z" target="_blank" rel="noopener">x.com/r3l0z</a>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="rule"><div class="bar"></div></div>
+
+<div class="bar-controls">
+  <div class="grp">
+    <span class="lab">path</span>
+    <div class="seg" id="dirseg">
+      <button data-dir="rx" class="on"><span class="dot rx"></span>Ingress</button>
+      <button data-dir="tx"><span class="dot tx"></span>Egress</button>
+      <button data-dir="both">Both</button>
+    </div>
+  </div>
+  <div class="grp">
+    <span class="lab">find</span>
+    <input class="find" id="find" placeholder="filter tunables" spellcheck="false" autocomplete="off">
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="stack">
+    <div class="flowhead">
+      <span class="start" id="flowstart">// from the wire, climbing to read()</span>
+      <span class="meta" id="flowmeta"></span>
+    </div>
+    <div id="map"></div>
+    <img class="mascot" src="borgr.png" alt="hardhat cat clutching a Monster" title="stay hydrate plz" onerror="this.style.display='none'">
+  </div>
+
+  <aside class="inspector">
+    <div class="insp-card" id="inspcard">
+      <div class="insp-body">
+        <div class="hint" id="hint">
+          <p>Select a <span class="u">tunable</span> to inspect its sysctl / ethtool / sysfs path, default, and the commands to check, change, and monitor it.</p>
+          <p><kbd>hover</kbd> previews &middot; <kbd>click</kbd> pins &middot; <kbd>esc</kbd> releases.</p>
+          <div class="legend">
+            <div class="li"><span class="sw" style="background:var(--rx)"></span>Ingress &mdash; receive path, wire up to read()</div>
+            <div class="li"><span class="sw" style="background:var(--tx)"></span>Egress &mdash; send path, write() down to wire</div>
+            <div class="li"><span class="sw" style="background:var(--accent)"></span>Shared &mdash; applies to both directions</div>
+            <div class="li" style="color:var(--ink-dim);margin-top:6px">Defaults are typical modern-kernel values. Confirm on your host.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+/* ============================ tunable detail ============================== */
+const DATA = {
+  so_rcvbuf:{name:"SO_RCVBUF",kind:"socket option",dir:"rx",def:"app-set, clamped to rmem_max",
+    desc:"Per-socket receive buffer size set via setsockopt(); the kernel doubles it for bookkeeping.",
+    why:"Hard ceiling is net.core.rmem_max unless the process holds CAP_NET_ADMIN and uses SO_RCVBUFFORCE. Setting it disables receive autotuning for that socket.",
+    check:"ss -m   # skmem rb (rcv buf)",change:"setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &n, sizeof n)",mon:"ss -tm | grep -A1 ESTAB"},
+  so_sndbuf:{name:"SO_SNDBUF",kind:"socket option",dir:"tx",def:"app-set, clamped to wmem_max",
+    desc:"Per-socket send buffer size set via setsockopt(); doubled internally like SO_RCVBUF.",
+    why:"Clamped to net.core.wmem_max (SO_SNDBUFFORCE bypasses with CAP_NET_ADMIN). Setting it disables send-buffer autotuning.",
+    check:"ss -m   # skmem tb (snd buf)",change:"setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &n, sizeof n)",mon:"ss -tm"},
+  listen_backlog:{name:"listen(fd, backlog)",kind:"syscall arg",dir:"rx",def:"app-set, capped by somaxconn",
+    desc:"The backlog argument to listen() sizes the accept queue of completed connections waiting for accept().",
+    why:"Silently capped to net.core.somaxconn. Overflow increments ListenOverflows and is governed by tcp_abort_on_overflow.",
+    check:"ss -ltn   # Recv-Q = current, Send-Q = backlog",change:"listen(fd, backlog)   // also raise app config, e.g. nginx 'backlog='",mon:"nstat -az TcpExtListenOverflows TcpExtListenDrops"},
+  tcp_nodelay:{name:"TCP_NODELAY",kind:"socket option",dir:"tx",def:"off (Nagle enabled)",
+    desc:"Disables Nagle's algorithm so small writes go out immediately instead of waiting while a prior segment is unacked.",
+    why:"Lowers latency for interactive and request/response traffic at the cost of more, smaller packets. Interacts with tcp_notsent_lowat and delayed ACKs.",
+    check:"getsockopt(fd, IPPROTO_TCP, TCP_NODELAY, ...)",change:"setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof one)",mon:"strace -e setsockopt ./app"},
+  so_reuseport:{name:"SO_REUSEPORT",kind:"socket option",dir:"rx",def:"off",
+    desc:"Lets multiple sockets bind the same ip:port; the kernel load-balances incoming connections across them via a hash or eBPF reuseport program.",
+    why:"Scales accept() across worker threads/processes without one shared accept-queue bottleneck. Each socket gets its own accept queue.",
+    check:"ss -ltn   # multiple listeners on the same port",change:"setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof one)",mon:"ss -ltn '( sport = :443 )'"},
+
+  somaxconn:{name:"net.core.somaxconn",kind:"sysctl",dir:"rx",def:"4096  (128 before 5.4)",
+    desc:"Upper bound on the listen() backlog, i.e. the maximum size of the accept (completed-connection) queue.",
+    why:"On modern kernels this also caps the SYN queue. Too small under load and completed handshakes are dropped, so clients stall and retry.",
+    check:"sysctl net.core.somaxconn",change:"sysctl -w net.core.somaxconn=65535",mon:"ss -ltn ; nstat -az TcpExtListenOverflows"},
+  tcp_max_syn_backlog:{name:"net.ipv4.tcp_max_syn_backlog",kind:"sysctl",dir:"rx",def:"RAM-sized, ~256-2048+",
+    desc:"Maximum number of half-open connections (SYN received, handshake incomplete) queued per listener.",
+    why:"When exceeded the kernel drops SYNs unless syncookies engage. Raise it for high connection-rate or SYN-flood-prone front ends.",
+    check:"sysctl net.ipv4.tcp_max_syn_backlog",change:"sysctl -w net.ipv4.tcp_max_syn_backlog=8192",mon:"nstat -az TcpExtTCPReqQFullDrop TcpExtTCPReqQFullDoCookies"},
+  tcp_syncookies:{name:"net.ipv4.tcp_syncookies",kind:"sysctl",dir:"rx",def:"1 (enabled)",
+    desc:"When the SYN queue overflows, encode connection state in the SYN-ACK sequence number instead of storing it, defeating SYN floods.",
+    why:"Cookies disable some TCP options (large windows, SACK) for cookie-accepted connections, so treat it as a safety net rather than a tuning lever.",
+    check:"sysctl net.ipv4.tcp_syncookies",change:"sysctl -w net.ipv4.tcp_syncookies=1",mon:"nstat -az TcpExtSyncookiesSent TcpExtSyncookiesRecv"},
+  tcp_abort_on_overflow:{name:"net.ipv4.tcp_abort_on_overflow",kind:"sysctl",dir:"rx",def:"0",
+    desc:"If set, send RST to connections arriving when the accept queue is full instead of silently dropping (which forces a client retransmit).",
+    why:"Usually left at 0: dropping lets a transient burst recover via retransmit. Setting 1 surfaces overload faster but is more aggressive.",
+    check:"sysctl net.ipv4.tcp_abort_on_overflow",change:"sysctl -w net.ipv4.tcp_abort_on_overflow=0",mon:"nstat -az TcpExtListenOverflows"},
+  tcp_fin_timeout:{name:"net.ipv4.tcp_fin_timeout",kind:"sysctl",dir:"both",def:"60 s",
+    desc:"Seconds to hold a socket in FIN-WAIT-2 awaiting the peer's final FIN before forcibly closing.",
+    why:"Lower values reclaim orphaned sockets faster under churn; too low breaks slow peers. Distinct from TIME-WAIT (fixed 2*MSL = 60 s).",
+    check:"sysctl net.ipv4.tcp_fin_timeout",change:"sysctl -w net.ipv4.tcp_fin_timeout=30",mon:"ss -tan state fin-wait-2 | wc -l"},
+  tcp_tw_reuse:{name:"net.ipv4.tcp_tw_reuse",kind:"sysctl",dir:"both",def:"2 (loopback only)",
+    desc:"Allows reusing a TIME-WAIT socket for a new outbound connection when timestamps prove it is safe.",
+    why:"Helps clients exhausting ephemeral ports under high outbound connection rates. Value 2 restricts reuse to loopback.",
+    check:"sysctl net.ipv4.tcp_tw_reuse",change:"sysctl -w net.ipv4.tcp_tw_reuse=1",mon:"ss -tan state time-wait | wc -l"},
+  tcp_congestion_control:{name:"net.ipv4.tcp_congestion_control",kind:"sysctl",dir:"tx",def:"cubic",
+    desc:"Congestion-control algorithm for new connections. cubic is the default; bbr is loss-agnostic and often better on lossy or long-fat paths.",
+    why:"Governs how the send rate grows and backs off. Per-connection override via TCP_CONGESTION. bbr generally wants the fq qdisc for pacing.",
+    check:"sysctl net.ipv4.tcp_congestion_control ; cat /proc/sys/net/ipv4/tcp_available_congestion_control",change:"modprobe tcp_bbr ; sysctl -w net.ipv4.tcp_congestion_control=bbr",mon:"ss -tin | grep -oE 'bbr|cubic'"},
+  tcp_slow_start_after_idle:{name:"net.ipv4.tcp_slow_start_after_idle",kind:"sysctl",dir:"tx",def:"1",
+    desc:"If set, a connection idle longer than one RTO resets its congestion window to the initial window, restarting slow start.",
+    why:"Disabling (0) avoids throughput collapse on bursty long-lived connections such as keepalive HTTP, RPC pools, and push channels.",
+    check:"sysctl net.ipv4.tcp_slow_start_after_idle",change:"sysctl -w net.ipv4.tcp_slow_start_after_idle=0",mon:"ss -tin   # watch cwnd after idle"},
+  tcp_notsent_lowat:{name:"net.ipv4.tcp_notsent_lowat",kind:"sysctl",dir:"tx",def:"-1 (off)",
+    desc:"Caps the unsent data the kernel buffers before reporting the socket writable (epoll EPOLLOUT).",
+    why:"Keeps the send buffer shallow so the app can reprioritize late, cutting head-of-line latency for multiplexed protocols (HTTP/2).",
+    check:"sysctl net.ipv4.tcp_notsent_lowat",change:"sysctl -w net.ipv4.tcp_notsent_lowat=131072   # or per-socket TCP_NOTSENT_LOWAT",mon:"ss -tm   # watch unsent"},
+
+  tcp_rmem:{name:"net.ipv4.tcp_rmem",kind:"sysctl (min def max)",dir:"rx",def:"4096  131072  6291456",
+    desc:"Three byte values: min (under pressure), default (initial autotuned size), max (autotuning ceiling) of the TCP receive buffer.",
+    why:"max must cover the bandwidth-delay product for full throughput on high-RTT links. Overrides rmem_default for TCP; SO_RCVBUF disables autotuning.",
+    check:"sysctl net.ipv4.tcp_rmem",change:"sysctl -w net.ipv4.tcp_rmem='4096 131072 67108864'",mon:"ss -tm ; cat /proc/net/sockstat"},
+  rmem_max:{name:"net.core.rmem_max",kind:"sysctl",dir:"rx",def:"212992 (208 KiB); 4 MiB on recent kernels",
+    desc:"Maximum receive buffer any socket can request via SO_RCVBUF, across all protocols.",
+    why:"Long the classic 208 KiB; mainline now documents 4194304 (4 MiB). Raise alongside tcp_rmem max for apps that set SO_RCVBUF, and for high-rate UDP receivers.",
+    check:"sysctl net.core.rmem_max",change:"sysctl -w net.core.rmem_max=67108864",mon:"ss -m"},
+  rmem_default:{name:"net.core.rmem_default",kind:"sysctl",dir:"rx",def:"212992  (208 KiB)",
+    desc:"Default receive buffer for sockets that don't set SO_RCVBUF and lack their own autotuning (e.g. UDP).",
+    why:"TCP uses tcp_rmem instead, so this mainly affects UDP/raw sockets. Raise for high-rate UDP receivers seeing RcvbufErrors.",
+    check:"sysctl net.core.rmem_default",change:"sysctl -w net.core.rmem_default=1048576",mon:"nstat -az UdpRcvbufErrors"},
+  tcp_moderate_rcvbuf:{name:"net.ipv4.tcp_moderate_rcvbuf",kind:"sysctl",dir:"rx",def:"1 (enabled)",
+    desc:"Enables TCP receive-buffer autotuning: the kernel grows the buffer between tcp_rmem min and max based on the connection's needs.",
+    why:"Leave on. It is why you rarely set SO_RCVBUF by hand. Setting SO_RCVBUF on a socket disables autotuning for that socket.",
+    check:"sysctl net.ipv4.tcp_moderate_rcvbuf",change:"sysctl -w net.ipv4.tcp_moderate_rcvbuf=1",mon:"ss -tm   # watch rb grow"},
+  tcp_adv_win_scale:{name:"net.ipv4.tcp_adv_win_scale",kind:"sysctl",dir:"rx",def:"1 (older: 2)",
+    desc:"Sets how the receive buffer splits between the application window and kernel skb overhead.",
+    why:"Positive values reserve buffer/2^scale for overhead, changing the effective advertised window for a given rmem. Rarely touched.",
+    check:"sysctl net.ipv4.tcp_adv_win_scale",change:"sysctl -w net.ipv4.tcp_adv_win_scale=1",mon:"ss -tin   # rcv window"},
+  tcp_wmem:{name:"net.ipv4.tcp_wmem",kind:"sysctl (min def max)",dir:"tx",def:"4096  16384  4194304",
+    desc:"Three byte values: min, default (initial), max of the TCP send buffer, autotuned per connection.",
+    why:"max bounds in-flight plus unsent data; size it to the BDP for throughput. SO_SNDBUF pins it and disables autotuning.",
+    check:"sysctl net.ipv4.tcp_wmem",change:"sysctl -w net.ipv4.tcp_wmem='4096 65536 33554432'",mon:"ss -tm ; cat /proc/net/sockstat"},
+  wmem_max:{name:"net.core.wmem_max",kind:"sysctl",dir:"tx",def:"212992 (208 KiB); 4 MiB on recent kernels",
+    desc:"Maximum send buffer any socket can request via SO_SNDBUF, across all protocols.",
+    why:"Long the classic 208 KiB; mainline now documents 4194304 (4 MiB). Raise with tcp_wmem max for apps setting SO_SNDBUF, and for high-rate UDP senders.",
+    check:"sysctl net.core.wmem_max",change:"sysctl -w net.core.wmem_max=33554432",mon:"ss -m"},
+  wmem_default:{name:"net.core.wmem_default",kind:"sysctl",dir:"tx",def:"212992  (208 KiB)",
+    desc:"Default send buffer for sockets that don't set SO_SNDBUF and lack protocol autotuning (e.g. UDP).",
+    why:"TCP uses tcp_wmem; this mostly affects UDP/raw senders. Raise for UDP apps hitting SndbufErrors.",
+    check:"sysctl net.core.wmem_default",change:"sysctl -w net.core.wmem_default=1048576",mon:"nstat -az UdpSndbufErrors"},
+  optmem_max:{name:"net.core.optmem_max",kind:"sysctl",dir:"both",def:"128 KiB (older: 20-64 KiB)",
+    desc:"Maximum ancillary buffer per socket: control messages (cmsg), TCP timestamps, and per-packet metadata, not payload. TCP tx zerocopy also bounds its internal structures by it.",
+    why:"Matters for apps using lots of cmsg (timestamping, SCM_RIGHTS, steering) and tx zerocopy. Raise if sendmsg/recvmsg fail with ENOBUFS on control data.",
+    check:"sysctl net.core.optmem_max",change:"sysctl -w net.core.optmem_max=131072",mon:"strace -e sendmsg ./app   # ENOBUFS"},
+  tcp_mem:{name:"net.ipv4.tcp_mem",kind:"sysctl (low pres high)",dir:"both",def:"auto from RAM (pages)",
+    desc:"Three values in PAGES (not bytes): low / pressure / high thresholds for total TCP memory across all sockets system-wide.",
+    why:"Above pressure TCP trims buffers; above high it refuses new allocations. Autosized at boot; rarely needs manual change.",
+    check:"sysctl net.ipv4.tcp_mem ; grep TCP /proc/net/sockstat",change:"sysctl -w net.ipv4.tcp_mem='low pressure high'   # pages",mon:"cat /proc/net/sockstat   # mem field"},
+
+  netfilter:{name:"netfilter hooks",kind:"iptables / nftables",dir:"both",def:"per ruleset; conntrack module",
+    desc:"Packet-filter hook points: rx traverses PREROUTING then LOCAL_IN; tx traverses LOCAL_OUT then POSTROUTING. Connection tracking runs here.",
+    why:"Each rule and the conntrack table add per-packet cost. Heavy rulesets or conntrack pressure surface as latency and drops.",
+    check:"nft list ruleset ; iptables -L -v -n",change:"nft add rule ...   /   iptables ...",mon:"conntrack -S ; cat /proc/net/stat/nf_conntrack"},
+  rp_filter:{name:"net.ipv4.conf.*.rp_filter",kind:"sysctl",dir:"rx",def:"distro: 1 or 2",
+    desc:"Reverse-path filtering: drop incoming packets whose source wouldn't route back out the same interface (anti-spoofing).",
+    why:"1 = strict (RFC3704), 2 = loose. Strict breaks asymmetric/multihomed routing, a classic cause of mysterious drops.",
+    check:"sysctl net.ipv4.conf.all.rp_filter",change:"sysctl -w net.ipv4.conf.all.rp_filter=2",mon:"nstat -az IpReversePathFilter"},
+  ip_local_port_range:{name:"net.ipv4.ip_local_port_range",kind:"sysctl",dir:"tx",def:"32768  60999",
+    desc:"Range of ephemeral ports used for outbound connections and bind-to-port-0.",
+    why:"A narrow range limits concurrent outbound connections to a single destination tuple; widen it on busy clients/proxies hitting port exhaustion.",
+    check:"sysctl net.ipv4.ip_local_port_range",change:"sysctl -w net.ipv4.ip_local_port_range='1024 65535'",mon:"ss -s ; ss -tan state time-wait | wc -l"},
+  ip_forward:{name:"net.ipv4.ip_forward",kind:"sysctl",dir:"both",def:"0",
+    desc:"Master switch turning the host into a router: packets not destined locally are forwarded per the routing table.",
+    why:"Required for NAT gateways, containers, VPNs, and k8s nodes. Off by default for security on end hosts.",
+    check:"sysctl net.ipv4.ip_forward",change:"sysctl -w net.ipv4.ip_forward=1",mon:"cat /proc/sys/net/ipv4/ip_forward"},
+  ip_default_ttl:{name:"net.ipv4.ip_default_ttl",kind:"sysctl",dir:"tx",def:"64",
+    desc:"Default TTL (hop limit) written into the IP header of locally generated packets.",
+    why:"Rarely changed. Each router decrements by one until it reaches zero. Lower to scope traffic; some setups raise it.",
+    check:"sysctl net.ipv4.ip_default_ttl",change:"sysctl -w net.ipv4.ip_default_ttl=64",mon:"ping -c1 host   # ttl in reply"},
+  nf_conntrack_max:{name:"net.netfilter.nf_conntrack_max",kind:"sysctl",dir:"both",def:"RAM-sized, ~256K",
+    desc:"Maximum tracked connections in the conntrack table used by stateful firewalls and NAT.",
+    why:"When full, new connections drop with 'nf_conntrack: table full' in dmesg. Scale it and the hashsize on NAT gateways and busy nodes.",
+    check:"sysctl net.netfilter.nf_conntrack_max ; cat /proc/sys/net/netfilter/nf_conntrack_count",change:"sysctl -w net.netfilter.nf_conntrack_max=1048576",mon:"conntrack -S ; dmesg | grep conntrack"},
+
+  netdev_max_backlog:{name:"net.core.netdev_max_backlog",kind:"sysctl",dir:"rx",def:"1000",
+    desc:"Maximum packets queued on the per-CPU input backlog (ingress side) when the stack receives faster than it processes, including under RPS.",
+    why:"Overflow shows as 'dropped' (column 2) in /proc/net/softnet_stat. Raise for bursty 10G+/RPS workloads; pairs with netdev_budget.",
+    check:"sysctl net.core.netdev_max_backlog",change:"sysctl -w net.core.netdev_max_backlog=16384",mon:"awk '{print $1,$2}' /proc/net/softnet_stat   # col2 = dropped"},
+  default_qdisc:{name:"net.core.default_qdisc",kind:"sysctl",dir:"tx",def:"fq_codel (distro) / pfifo_fast (kernel)",
+    desc:"Default queueing discipline on egress of new interfaces. fq_codel fights bufferbloat; fq adds pacing (needed for BBR).",
+    why:"The kernel's built-in default is pfifo_fast, but most distros ship fq_codel via sysctl.d. The qdisc choice controls latency under load and how the egress queue is drained.",
+    check:"sysctl net.core.default_qdisc ; tc qdisc show",change:"sysctl -w net.core.default_qdisc=fq",mon:"tc -s qdisc show dev eth0"},
+  txqueuelen:{name:"txqueuelen",kind:"ip link (per-device)",dir:"tx",def:"1000",
+    desc:"Length in packets of the egress qdisc queue for a device (the classic pfifo_fast / fq buffer depth).",
+    why:"Too deep = bufferbloat; too shallow = drops under burst. Modern AQM qdiscs (fq_codel) make the raw value less critical.",
+    check:"ip link show dev eth0   # qlen",change:"ip link set dev eth0 txqueuelen 10000",mon:"ip -s link show dev eth0 ; tc -s qdisc show dev eth0"},
+
+  netdev_budget:{name:"net.core.netdev_budget",kind:"sysctl",dir:"rx",def:"300",
+    desc:"Maximum packets the NET_RX softirq drains across all NICs in a single NAPI poll cycle before yielding the CPU.",
+    why:"Too low under high pps and the poll exits early and reschedules ('squeezed', col 3 of softnet_stat), adding latency. Raise on high-throughput boxes.",
+    check:"sysctl net.core.netdev_budget",change:"sysctl -w net.core.netdev_budget=3000",mon:"awk '{print $3}' /proc/net/softnet_stat   # col3 = squeezed"},
+  netdev_budget_usecs:{name:"net.core.netdev_budget_usecs",kind:"sysctl",dir:"rx",def:"2000 us (2 ms)",
+    desc:"Time limit for one NAPI poll cycle. The poll ends at whichever comes first: netdev_budget packets or netdev_budget_usecs microseconds.",
+    why:"Bounds how long softirq monopolizes a CPU. Raise with netdev_budget when packets are squeezed before the budget is spent.",
+    check:"sysctl net.core.netdev_budget_usecs",change:"sysctl -w net.core.netdev_budget_usecs=8000",mon:"awk '{print $3}' /proc/net/softnet_stat"},
+  dev_weight:{name:"net.core.dev_weight",kind:"sysctl",dir:"rx",def:"64",
+    desc:"Per-poll quota of packets a single NAPI/interface instance may process; a GRO/LRO super-packet counts as one.",
+    why:"Scales how the global netdev_budget is shared per device per poll. Rarely tuned directly; netdev_budget is the usual lever.",
+    check:"sysctl net.core.dev_weight",change:"sysctl -w net.core.dev_weight=128",mon:"cat /proc/net/softnet_stat"},
+  flow_limit:{name:"net.core.flow_limit_cpu_bitmap",kind:"sysctl + per-flow",dir:"rx",def:"off",
+    desc:"Flow limit: when the per-CPU backlog fills, fairly drop packets from elephant flows so small flows still make progress.",
+    why:"Protects latency-sensitive small flows from a few high-rate flows monopolizing the RPS backlog on a shared CPU.",
+    check:"cat /proc/sys/net/core/flow_limit_cpu_bitmap ; sysctl net.core.flow_limit_table_len",change:"echo f > /proc/sys/net/core/flow_limit_cpu_bitmap",mon:"awk '{print $9}' /proc/net/softnet_stat   # flow-limit count"},
+  rps:{name:"RPS  (rx-N/rps_cpus)",kind:"sysfs (per rx-queue)",dir:"rx",def:"0 (disabled)",
+    desc:"Receive Packet Steering: software hashing of incoming flows onto a set of CPUs for stack processing, done in softirq after the driver.",
+    why:"Spreads receive load across cores when the NIC has fewer hardware queues than CPUs (or weak RSS). The cheap software analogue of RSS.",
+    check:"cat /sys/class/net/eth0/queues/rx-0/rps_cpus",change:"echo ff > /sys/class/net/eth0/queues/rx-0/rps_cpus",mon:"mpstat -P ALL 1   # %soft per core"},
+  rfs:{name:"RFS  (rps_sock_flow_entries)",kind:"sysctl + sysfs",dir:"rx",def:"0 (disabled)",
+    desc:"Receive Flow Steering extends RPS to steer a flow to the CPU running the app that will recv() it, improving cache locality.",
+    why:"Cuts cross-core cache misses for the app's data. Set the global rps_sock_flow_entries plus per-queue rps_flow_cnt.",
+    check:"sysctl net.core.rps_sock_flow_entries ; cat /sys/class/net/eth0/queues/rx-0/rps_flow_cnt",change:"sysctl -w net.core.rps_sock_flow_entries=32768 ; echo 2048 > /sys/class/net/eth0/queues/rx-0/rps_flow_cnt",mon:"mpstat -P ALL 1"},
+  gro:{name:"GRO  (generic receive offload)",kind:"ethtool -K",dir:"rx",def:"on",
+    desc:"Merges adjacent incoming segments of one flow into a single large skb before handing them up the stack, cutting per-packet overhead.",
+    why:"Big throughput win, slight latency add. Software (GRO) or hardware (GRO_HW/LRO). Disable LRO on routers to avoid resegmentation breakage.",
+    check:"ethtool -k eth0 | grep -e generic-receive -e large-receive",change:"ethtool -K eth0 gro on   # lro off for routers",mon:"ethtool -S eth0 | grep -i gro"},
+  xps:{name:"XPS  (tx-N/xps_cpus)",kind:"sysfs (per tx-queue)",dir:"tx",def:"0 (driver default)",
+    desc:"Transmit Packet Steering pins each CPU to a specific NIC tx queue so a core always uses the same queue, avoiding lock contention.",
+    why:"Reduces tx-queue lock contention and improves cache locality on multiqueue NICs. The transmit-side counterpart to RPS.",
+    check:"cat /sys/class/net/eth0/queues/tx-0/xps_cpus",change:"echo 01 > /sys/class/net/eth0/queues/tx-0/xps_cpus",mon:"ethtool -S eth0 | grep -i tx_queue"},
+
+  ring:{name:"rx/tx ring buffer",kind:"ethtool -G",dir:"both",def:"256-512 (max often 4096)",
+    desc:"Number of DMA descriptors in the NIC's receive and transmit rings: how many packets hardware buffers in RAM before the driver services them.",
+    why:"Too small an rx ring drops bursts (rx_*_missed/overrun in ethtool -S); too large adds latency. Often the first thing to raise on a dropping 10G NIC.",
+    check:"ethtool -g eth0",change:"ethtool -G eth0 rx 4096 tx 4096",mon:"ethtool -S eth0 | grep -e drop -e err -e miss -e over"},
+  coalesce:{name:"interrupt coalescing",kind:"ethtool -C",dir:"both",def:"driver default",
+    desc:"How long (rx/tx-usecs) or how many frames (rx/tx-frames) the NIC waits before raising a hard IRQ, batching completions.",
+    why:"More coalescing = fewer interrupts and higher throughput, more latency. Less = lower latency, more CPU. The core throughput/latency dial.",
+    check:"ethtool -c eth0",change:"ethtool -C eth0 rx-usecs 50 rx-frames 64",mon:"cat /proc/interrupts | grep eth0"},
+  adaptive:{name:"adaptive-rx / adaptive-tx",kind:"ethtool -C",dir:"both",def:"often on",
+    desc:"Lets the NIC vary coalescing dynamically: more under load, less when idle.",
+    why:"Hands the throughput/latency tradeoff to firmware. Disable it when you need deterministic low latency and want to pin rx-usecs by hand.",
+    check:"ethtool -c eth0 | grep -i adaptive",change:"ethtool -C eth0 adaptive-rx off rx-usecs 10",mon:"cat /proc/interrupts ; mpstat -P ALL 1"},
+  channels:{name:"channels / queues",kind:"ethtool -L",dir:"both",def:"~ #cores (capped)",
+    desc:"Number of hardware rx/tx/combined queues (channels) the NIC exposes; each typically maps to its own IRQ and CPU.",
+    why:"More queues = more parallelism for RSS/XPS, ideally one per CPU up to the NIC limit. Pair with IRQ affinity for clean per-core processing.",
+    check:"ethtool -l eth0",change:"ethtool -L eth0 combined 16",mon:"ls /sys/class/net/eth0/queues/ ; cat /proc/interrupts"},
+  offloads:{name:"offloads GRO/GSO/TSO/LRO",kind:"ethtool -K",dir:"both",def:"tso/gso/gro on, lro off",
+    desc:"Segmentation/checksum offloads. TSO/GSO hand large buffers down and let the NIC (TSO) or last layer (GSO) split them into MTU segments; LRO/GRO do the inverse on rx.",
+    why:"Major CPU savings at high throughput, but TSO/GSO interact with qdisc pacing and BQL, and LRO must be off on routers (it mangles forwarded packets).",
+    check:"ethtool -k eth0",change:"ethtool -K eth0 tso on gso on gro on lro off",mon:"ethtool -S eth0 | grep -iE 'tso|gso'"},
+  irq_affinity:{name:"IRQ affinity",kind:"/proc/irq/*/smp_affinity",dir:"both",def:"all CPUs / irqbalance",
+    desc:"Which CPU(s) service each NIC queue's hardware interrupt. With RSS/XPS this builds clean per-core receive/transmit pipelines.",
+    why:"Stops every IRQ piling on CPU0 and keeps a flow's IRQ, softirq, and app on the same core/NUMA node. Watch for irqbalance overriding manual settings.",
+    check:"grep eth0 /proc/interrupts ; cat /proc/irq/N/smp_affinity_list",change:"echo 2 > /proc/irq/N/smp_affinity   # or set_irq_affinity.sh",mon:"watch -n1 'grep eth0 /proc/interrupts'"},
+  pause:{name:"flow control (pause frames)",kind:"ethtool -A",dir:"both",def:"often on (autoneg)",
+    desc:"Ethernet PAUSE frames: a congested receiver tells the link partner to stop briefly instead of dropping.",
+    why:"Can prevent drops on point-to-point links but causes head-of-line blocking, so it is usually disabled in datacenters in favor of higher-layer congestion control.",
+    check:"ethtool -a eth0",change:"ethtool -A eth0 rx off tx off",mon:"ethtool -S eth0 | grep -i pause"},
+  bql:{name:"BQL  (byte_queue_limits)",kind:"sysfs (per tx-queue)",dir:"tx",def:"auto (dynamic)",
+    desc:"Byte Queue Limits dynamically cap how many bytes sit in the NIC tx ring, so the qdisc keeps control instead of bytes hiding in the driver.",
+    why:"Kills bufferbloat at the driver/ring boundary by keeping the hardware queue just full enough to stay busy. Usually self-tuning; limit_max caps it.",
+    check:"cat /sys/class/net/eth0/queues/tx-0/byte_queue_limits/limit",change:"echo N > /sys/class/net/eth0/queues/tx-0/byte_queue_limits/limit_max",mon:"cat /sys/class/net/eth0/queues/tx-0/byte_queue_limits/inflight"},
+
+  rss:{name:"RSS  (receive side scaling)",kind:"ethtool -X",dir:"both",def:"on (multiqueue NICs)",
+    desc:"Hardware hashing of incoming flows across multiple rx queues/IRQs so receive processing parallelizes across CPUs from the very first step.",
+    why:"The foundation of multicore receive scaling. Configure the hash key/fields and indirection table to balance flows across queues.",
+    check:"ethtool -x eth0 ; ethtool -n eth0 rx-flow-hash tcp4",change:"ethtool -X eth0 equal 16 ; ethtool -N eth0 rx-flow-hash tcp4 sdfn",mon:"ethtool -S eth0 | grep -iE 'rx_queue|rxq'"},
+  ntuple:{name:"ntuple / Flow Director",kind:"ethtool -N",dir:"both",def:"off",
+    desc:"Hardware flow classification: steer specific 5-tuples to a chosen rx queue (Intel Flow Director / aRFS), bypassing the RSS hash.",
+    why:"Pins a known important flow to a specific CPU/queue, or implements accelerated RFS so the NIC steers to the app's core in hardware.",
+    check:"ethtool -k eth0 | grep ntuple ; ethtool -n eth0",change:"ethtool -K eth0 ntuple on ; ethtool -N eth0 flow-type tcp4 dst-port 443 action 3",mon:"ethtool -S eth0 | grep -i fdir"},
+  mtu:{name:"MTU",kind:"ip link",dir:"both",def:"1500",
+    desc:"Maximum transmission unit: the largest L2 payload the interface sends without IP fragmentation. Jumbo frames raise it to ~9000.",
+    why:"Jumbo frames cut per-packet overhead for bulk transfer, but every hop and peer must agree or you get black-holed PMTUD failures.",
+    check:"ip link show eth0   # mtu",change:"ip link set eth0 mtu 9000",mon:"ping -M do -s 8972 peer   # test path MTU"},
+  hw_timestamp:{name:"hardware timestamping",kind:"ethtool -T",dir:"both",def:"hardware dependent",
+    desc:"The NIC timestamps packets in hardware on rx/tx (PTP/PHC), far more precise than software timestamps taken inside the stack.",
+    why:"Essential for PTP time sync and accurate latency measurement. Exposed via SO_TIMESTAMPING; needs NIC and driver support.",
+    check:"ethtool -T eth0",change:"hwstamp_ctl -i eth0 ...   (app uses SO_TIMESTAMPING)",mon:"ethtool -T eth0 ; ptp4l logs"},
+  promisc:{name:"promiscuous mode",kind:"ip link",dir:"rx",def:"off",
+    desc:"Receive all frames on the segment, not just those addressed to this NIC's MAC. Off normally; required for sniffers and bridges.",
+    why:"tcpdump enables it transiently; bridges and taps need it. Off, the NIC drops non-matching unicast at the MAC filter before DMA.",
+    check:"ip link show eth0   # PROMISC flag",change:"ip link set eth0 promisc on",mon:"ip -d link show eth0 ; dmesg | grep promisc"}
+};
+
+/* ===================== layers, ordered wire -> app (ingress) ============== */
+/* d = which direction view a row appears in. meta = terse leader value.      */
+const LAYERS = [
+  {idx:"01", name:"NIC Hardware", tag:"MAC / PHY",
+   capRx:"FCS + MAC filter, DMA into the rx ring", capTx:"DMA out of the tx ring, serialize onto PHY",
+   rows:[
+     {id:"rss",d:"both",m:"ethtool -X . on"},
+     {id:"ntuple",d:"both",m:"ethtool -N . off"},
+     {id:"mtu",d:"both",m:"ip link . 1500"},
+     {id:"hw_timestamp",d:"both",m:"ethtool -T . hw-dep"},
+     {id:"promisc",d:"rx",m:"ip link . off"},
+   ]},
+  {idx:"02", name:"Driver + Ring", tag:"DMA / HARD IRQ",
+   capRx:"hard IRQ on rx, descriptors drained by NAPI", capTx:"ndo_start_xmit fills the ring, BQL gates bytes",
+   rows:[
+     {id:"ring",d:"both",m:"ethtool -G . 256-512"},
+     {id:"coalesce",d:"both",m:"ethtool -C . adaptive"},
+     {id:"adaptive",d:"both",m:"ethtool -C . on"},
+     {id:"channels",d:"both",m:"ethtool -L . = cores"},
+     {id:"offloads",d:"both",m:"ethtool -K . tso/gso"},
+     {id:"irq_affinity",d:"both",m:"/proc/irq . all"},
+     {id:"pause",d:"both",m:"ethtool -A . on"},
+     {id:"bql",d:"tx",m:"sysfs . auto"},
+   ]},
+  {idx:"03", name:"SoftIRQ / NAPI", tag:"ksoftirqd",
+   capRx:"NET_RX_SOFTIRQ poll loop, steering, GRO", capTx:"NET_TX_SOFTIRQ, tx queue selection",
+   rows:[
+     {id:"netdev_budget",d:"rx",m:"net.core . 300"},
+     {id:"netdev_budget_usecs",d:"rx",m:"net.core . 2000us"},
+     {id:"dev_weight",d:"rx",m:"net.core . 64"},
+     {id:"flow_limit",d:"rx",m:"net.core . off"},
+     {id:"rps",d:"rx",m:"sysfs . off"},
+     {id:"rfs",d:"rx",m:"sysctl . off"},
+     {id:"gro",d:"rx",m:"ethtool -K . on"},
+     {id:"xps",d:"tx",m:"sysfs . off"},
+   ]},
+  {idx:"04", name:"Traffic Control", tag:"QDISC",
+   capRx:"ingress qdisc / tc-ingress, cpu backlog", capTx:"egress qdisc drains toward the driver",
+   rows:[
+     {id:"netdev_max_backlog",d:"rx",m:"net.core . 1000"},
+     {id:"default_qdisc",d:"tx",m:"net.core . fq_codel"},
+     {id:"txqueuelen",d:"tx",m:"ip link . 1000"},
+   ]},
+  {idx:"05", name:"IP / Netfilter", tag:"L3",
+   capRx:"ip_rcv . PREROUTING . route . LOCAL_IN", capTx:"ip_queue_xmit . LOCAL_OUT . POSTROUTING",
+   rows:[
+     {id:"netfilter",d:"both",m:"nft . hooks"},
+     {id:"rp_filter",d:"rx",m:"conf . 1/2"},
+     {id:"ip_local_port_range",d:"tx",m:"net.ipv4 . 32768-60999"},
+     {id:"ip_forward",d:"both",m:"net.ipv4 . 0"},
+     {id:"ip_default_ttl",d:"tx",m:"net.ipv4 . 64"},
+     {id:"nf_conntrack_max",d:"both",m:"netfilter . ~256K"},
+   ]},
+  {idx:"06", name:"TCP State Machine", tag:"L4 / FSM",
+   capRx:"tcp_v4_rcv, accept & SYN queues", capTx:"tcp_write_xmit, congestion control",
+   rows:[
+     {id:"somaxconn",d:"rx",m:"net.core . 4096"},
+     {id:"tcp_max_syn_backlog",d:"rx",m:"net.ipv4 . ~1024"},
+     {id:"tcp_syncookies",d:"rx",m:"net.ipv4 . on"},
+     {id:"tcp_abort_on_overflow",d:"rx",m:"net.ipv4 . 0"},
+     {id:"tcp_fin_timeout",d:"both",m:"net.ipv4 . 60s"},
+     {id:"tcp_tw_reuse",d:"both",m:"net.ipv4 . 2"},
+     {id:"tcp_congestion_control",d:"tx",m:"net.ipv4 . cubic"},
+     {id:"tcp_slow_start_after_idle",d:"tx",m:"net.ipv4 . 1"},
+     {id:"tcp_notsent_lowat",d:"tx",m:"net.ipv4 . off"},
+   ]},
+  {idx:"07", name:"TCP Buffers", tag:"L4 / MEMORY",
+   capRx:"receive buffer, autotuned by rmem rules", capTx:"send buffer, autotuned by wmem rules",
+   rows:[
+     {id:"tcp_rmem",d:"rx",m:"net.ipv4 . 4K/128K/6M"},
+     {id:"rmem_max",d:"rx",m:"net.core . 208K/4M"},
+     {id:"rmem_default",d:"rx",m:"net.core . 208KiB"},
+     {id:"tcp_moderate_rcvbuf",d:"rx",m:"net.ipv4 . on"},
+     {id:"tcp_adv_win_scale",d:"rx",m:"net.ipv4 . 1"},
+     {id:"tcp_wmem",d:"tx",m:"net.ipv4 . 4K/16K/4M"},
+     {id:"wmem_max",d:"tx",m:"net.core . 208K/4M"},
+     {id:"wmem_default",d:"tx",m:"net.core . 208KiB"},
+     {id:"optmem_max",d:"both",m:"net.core . 128KiB"},
+     {id:"tcp_mem",d:"both",m:"net.ipv4 . auto"},
+   ]},
+  {idx:"08", name:"Socket / Application", tag:"USER SPACE",
+   capRx:"epoll wakeup . read() recv() recvmsg()", capTx:"write() send() sendmsg() . sendmsg",
+   rows:[
+     {id:"so_rcvbuf",d:"rx",m:"socket . <=rmem_max"},
+     {id:"listen_backlog",d:"rx",m:"syscall . <=somaxconn"},
+     {id:"so_reuseport",d:"rx",m:"socket . off"},
+     {id:"so_sndbuf",d:"tx",m:"socket . <=wmem_max"},
+     {id:"tcp_nodelay",d:"tx",m:"socket . off"},
+   ]},
+];
+
+/* transition labels, between consecutive panels in reading order */
+const FLOW = {
+  rx:["DMA to RAM ring &middot; <b>hard IRQ</b>","schedule NAPI &middot; <b>NET_RX_SOFTIRQ</b>","<b>netif_receive_skb</b>","<b>ip_rcv</b>","<b>tcp_v4_rcv</b>","enqueue &middot; <b>receive buffer</b>","data ready &middot; <b>epoll wakeup</b>"],
+  tx:["<b>write()</b> &middot; enqueue send buffer","<b>tcp_write_xmit</b> &middot; congestion ctl","<b>ip_queue_xmit</b>","<b>dev_queue_xmit</b>","<b>NET_TX_SOFTIRQ</b>","<b>ndo_start_xmit</b> &middot; BQL","DMA fetch &middot; <b>serialize</b>"],
+};
+const WIRES = {
+  rx:{top:"&darr; PHYSICAL WIRE", bot:"&darr; READ()  user space"},
+  tx:{top:"&darr; WRITE()  user space", bot:"&darr; PHYSICAL WIRE"},
+};
+const HEADS = {
+  rx:"// ingress: from the wire, climbing to read()",
+  tx:"// egress: from write(), descending to the wire",
+  both:"// full duplex: every tunable, in flow order",
+};
+
+/* =============================== render =================================== */
+const map = document.getElementById('map');
+let dir = 'rx';
+let pinned = null;
+
+function rowVisible(d){
+  if(dir==='both') return true;
+  return d===dir || d==='both';
+}
+function buildRow(r){
+  const t = DATA[r.id]; if(!t) return '';
+  const vis = rowVisible(r.d);
+  const dcls = r.d==='rx'?'rx':r.d==='tx'?'tx':'both';
+  // split meta "scope . value" -> scope dim, value in secondary accent (the variable)
+  const parts = r.m.split(' . ');
+  const meta = parts.length>1 ? `${parts[0]} &middot; <span class="varv">${parts[1]}</span>` : r.m;
+  return `<div class="row ${dcls} ${vis?'':'hidden'}" data-id="${r.id}" data-d="${r.d}" tabindex="0">`
+       + `<span class="name">${t.name}</span>`
+       + `<span class="lead"></span><span class="meta">${meta}</span></div>`;
+}
+function buildPanel(L){
+  const cap = dir==='tx'?L.capTx:L.capRx;
+  const rows = L.rows.map(buildRow).join('');
+  // hide whole panel if no visible rows in this direction
+  const anyVis = L.rows.some(r=>rowVisible(r.d));
+  return `<section class="panel" data-panel ${anyVis?'':'style="display:none"'}>`
+       + `<div class="phead"><span class="idx">${L.idx}</span><span class="pname">${L.name}</span><span class="ptag">${L.tag}</span></div>`
+       + `<div class="pcap">${cap}</div>`
+       + `<div class="pbody">${rows}</div></section>`;
+}
+function flowConnector(label){
+  return `<div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">${label}</span></div>`;
+}
+function wireBar(text){
+  return `<div class="wire"><span class="ln"></span><span class="tag">${text}</span><span class="ln"></span></div>`;
+}
+
+function render(){
+  const order = dir==='tx' ? LAYERS.slice().reverse() : LAYERS.slice();
+  const flow = FLOW[dir==='both'?'rx':dir];
+  const w = WIRES[dir==='both'?'rx':dir];
+  let html = wireBar(w.top);
+  order.forEach((L,i)=>{
+    html += buildPanel(L);
+    if(i<order.length-1) html += flowConnector(flow[i] || '&middot;');
+  });
+  html += wireBar(w.bot);
+  map.innerHTML = html;
+  document.getElementById('flowstart').textContent = HEADS[dir].replace('// ','');
+  document.getElementById('flowstart').textContent = HEADS[dir];
+  wireRows();
+  applyFilter();
+}
+
+/* ---- inspector ---- */
+const inspBody = document.querySelector('.insp-body');
+const hintHTML = document.getElementById('hint').outerHTML;
+
+function cardHTML(id){
+  const d = DATA[id];
+  const dirName = d.dir==='rx'?'ingress':d.dir==='tx'?'egress':'both paths';
+  return `<div class="insp-head">
+      <div class="eyebrow">tunable</div>
+      <div class="insp-name">${d.name}</div>
+      <div class="tags"><span class="tag">${d.kind}</span><span class="tag dir-${d.dir}">${dirName}</span></div>
+    </div>
+    <div class="insp-body">
+      <p class="desc">${d.desc}<span class="why">${d.why}</span></p>
+      <div class="leadrow"><span class="k">default</span><span class="l"></span><span class="v">${d.def}</span></div>
+      <div class="cmd"><div class="k">check</div><div class="v">${fmtCmd(d.check,false)}</div></div>
+      <div class="cmd"><div class="k">change</div><div class="v">${fmtCmd(d.change,true)}</div></div>
+      <div class="cmd"><div class="k">monitor</div><div class="v">${fmtCmd(d.mon,false)}</div></div>
+    </div>
+    <div class="insp-foot">${pinned===id?'&#9679; pinned &mdash; click again, click away, or esc to release':'hover to preview &middot; click to pin'}</div>`;
+}
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// format a command line: dim the trailing comment, highlight the values you set (the variables)
+function fmtCmd(s,hl){
+  let cmt='';
+  const i=s.indexOf('#');
+  if(i>=0){ cmt=s.slice(i); s=s.slice(0,i); }
+  let out=esc(s);
+  if(hl){
+    out=out.replace(/=('[^']*'|[^\s<]+)/g,'=<span class="varv">$1</span>');
+    out=out.replace(/(\s)(\d{2,}(?:\.\d+)?|on|off|bbr|fq|fq_codel)(?=\s|$)/g,'$1<span class="varv">$2</span>');
+  }
+  if(cmt) out+='<span class="pmt">'+esc(cmt)+'</span>';
+  return out;
+}
+const card = document.getElementById('inspcard');
+function showCard(id){ card.innerHTML = cardHTML(id); }
+function showHint(){ card.innerHTML = `<div class="insp-body">${hintHTML}</div>`; }
+function clearActive(){ map.querySelectorAll('.row.active').forEach(p=>p.classList.remove('active')); }
+
+function wireRows(){
+  map.querySelectorAll('.row').forEach(el=>{
+    const id = el.dataset.id;
+    // hover always previews, regardless of pin
+    el.addEventListener('mouseenter',()=>showCard(id));
+    el.addEventListener('focus',()=>showCard(id));
+    // leaving reverts to the pinned card, or the hint if nothing pinned
+    el.addEventListener('mouseleave',()=>{ pinned ? showCard(pinned) : showHint(); });
+    el.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(pinned===id){ pinned=null; el.classList.remove('active'); }
+      else{ clearActive(); pinned=id; el.classList.add('active'); }
+      showCard(id);
+    });
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); }});
+  });
+}
+// click anywhere outside a row or the inspector releases the pin
+document.addEventListener('click',e=>{
+  if(e.target.closest('.row')||e.target.closest('.inspector')) return;
+  if(pinned){ clearActive(); pinned=null; showHint(); }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape' && pinned){ clearActive(); pinned=null; showHint(); }
+});
+
+/* ---- direction toggle ---- */
+document.getElementById('dirseg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#dirseg button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); dir=b.dataset.dir; pinned=null; showHint(); render();
+});
+
+/* ---- theme toggle ---- */
+document.getElementById('themeseg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#themeseg button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  const t=b.dataset.themeBtn;
+  if(t==='graphite') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme',t);
+});
+
+/* ---- typeface cycler (subtle, top right) ----
+   each option is a full fallback stack: installed Nerd Font / plain -> generic.
+   nothing is fetched; whatever you have installed wins, else system mono.    */
+const FONTS = [
+  {name:"Hack",        stack:"'Hack Nerd Font Mono','Hack Nerd Font','Hack',ui-monospace,monospace"},
+  {name:"Fira Code",   stack:"'FiraCode Nerd Font Mono','FiraCode Nerd Font','Fira Code',ui-monospace,monospace"},
+  {name:"JetBrains",   stack:"'JetBrainsMono Nerd Font Mono','JetBrainsMono Nerd Font','JetBrains Mono',ui-monospace,monospace"},
+  {name:"IBM Plex",    stack:"'BlexMono Nerd Font','IBM Plex Mono',ui-monospace,monospace"},
+  {name:"3270",        stack:"'3270 Nerd Font','3270',ui-monospace,monospace"},
+  {name:"System",      stack:"ui-monospace,'SFMono-Regular','Cascadia Code',Menlo,Consolas,monospace"},
+];
+let fi = 0;
+const fontbtn = document.getElementById('fontbtn');
+fontbtn.addEventListener('click',()=>{
+  fi = (fi+1) % FONTS.length;
+  const f = FONTS[fi];
+  document.documentElement.style.setProperty('--mono', f.stack);
+  fontbtn.style.fontFamily = f.stack;
+  fontbtn.title = 'Typeface: '+f.name+'  (click to cycle)';
+});
+
+/* ---- find / filter ---- */
+const find = document.getElementById('find');
+function applyFilter(){
+  const q = find.value.trim().toLowerCase();
+  map.querySelectorAll('.row').forEach(el=>{
+    if(el.classList.contains('hidden')){ el.classList.remove('fade'); return; }
+    if(!q){ el.classList.remove('fade'); return; }
+    const hay=(el.dataset.id+' '+(DATA[el.dataset.id]?.name||'')+' '+(DATA[el.dataset.id]?.kind||'')).toLowerCase();
+    el.classList.toggle('fade', !hay.includes(q));
+  });
+}
+find.addEventListener('input',applyFilter);
+find.addEventListener('keydown',e=>{ if(e.key==='Escape'){ find.value=''; applyFilter(); find.blur(); }});
+
+/* boot */
+render();
+</script>
+</body>
+</html>
