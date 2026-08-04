@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Linux Networking Stack / Tunable Reference</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
 <!-- fully self-contained: no external font requests. fonts resolve from your
      locally installed families (Nerd Fonts / plain) with generic fallbacks. -->
 <style>
@@ -16,44 +17,39 @@
    (base64 woff2) and prepend its family to --mono.
    ========================================================================== */
 :root{
-  --bg:#0e0f11;
-  --panel:#15161a;
-  --panel-2:#191b20;
-  --line:#262830;
-  --line-2:#363943;
-  --ink:#dcdad3;
-  --ink-mid:#9a9b93;
-  --ink-dim:#6f7169;
-  --accent:#e0863c;          /* signal amber  -- structure / brand */
-  --accent-soft:#e0863c2a;
-  --accent2:#5fc2ad;         /* secondary teal -- variable values you tune */
-  --rx:#7fb4c4;              /* ingress / cool */
-  --tx:#dd9a63;             /* egress / warm */
+  --bg:#E6EBEE;
+  --panel:#EFF3F5;
+  --panel-2:#E9EEF1;
+  --line:#C1CDD3;
+  --line-2:#AEBEC6;
+  --ink:#10171C;
+  --ink-mid:#46545E;
+  --ink-dim:#7A8790;
+  --accent:#0E7A8C;          /* protofun enum (teal) -- structure / brand */
+  --accent-soft:#0E7A8C24;
+  --accent2:#34507E;         /* structural blue -- variable values you tune */
+  --rx:#34507E;              /* ingress / cool */
+  --tx:#C1501A;             /* egress / warm */
   --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   /* body mono: prefers your installed coding fonts (Nerd Font or plain), then generic */
   --mono:"Hack Nerd Font Mono","Hack Nerd Font","Hack","FiraCode Nerd Font Mono","Fira Code","JetBrainsMono Nerd Font","JetBrains Mono",ui-monospace,"SFMono-Regular","Cascadia Code",Menlo,Consolas,monospace;
   /* display face: your locally installed 3270 Nerd Font, with mono fallback */
   --display:"3270 Nerd Font Propo","3270 Nerd Font","3270",ui-monospace,Menlo,Consolas,monospace;
 }
-[data-theme="phosphor"]{
-  --bg:#0c0f0d; --panel:#121613; --panel-2:#161b17; --line:#232a25; --line-2:#333d35;
-  --ink:#d6ddd3; --ink-mid:#919a8f; --ink-dim:#697066;
-  --accent:#7bbd8e; --accent-soft:#7bbd8e26; --accent2:#d8b466; --rx:#86c2b4; --tx:#cdbd7e;
+[data-theme="dark"]{
+  --bg:#0a0f0d; --panel:#0f1613; --panel-2:#131d18; --line:#22302a; --line-2:#31463c;
+  --ink:#c6f0d0; --ink-mid:#7fae90; --ink-dim:#4f6a5c;
+  --accent:#2fe38a; --accent-soft:#2fe38a26; --accent2:#4fb8d6; --rx:#4fb8d6; --tx:#e0a92e;
 }
-[data-theme="slate"]{
-  --bg:#0b0e12; --panel:#11151b; --panel-2:#151a21; --line:#222a34; --line-2:#33404d;
-  --ink:#d4dae1; --ink-mid:#8f99a4; --ink-dim:#69727c;
-  --accent:#5fa8cc; --accent-soft:#5fa8cc26; --accent2:#e0a35c; --rx:#7fbdd4; --tx:#d0a06e;
+[data-theme="amber"]{
+  --bg:#120c00; --panel:#1c1400; --panel-2:#241900; --line:#3a2a00; --line-2:#4d3800;
+  --ink:#ffb000; --ink-mid:#c08a2a; --ink-dim:#8a6a20;
+  --accent:#ffb000; --accent-soft:#ffb00026; --accent2:#ffd27a; --rx:#d98a1a; --tx:#ffd27a;
 }
-[data-theme="iris"]{
-  --bg:#0e0c14; --panel:#15131d; --panel-2:#1a1724; --line:#2a2638; --line-2:#3b3550;
-  --ink:#dad6e6; --ink-mid:#9a93ad; --ink-dim:#6f6885;
-  --accent:#a98cf0; --accent-soft:#a98cf026; --accent2:#6fccc0; --rx:#8fb6ee; --tx:#d79ad6;
-}
-[data-theme="rose"]{
-  --bg:#120d10; --panel:#1a1417; --panel-2:#201920; --line:#332530; --line-2:#48343f;
-  --ink:#e6d8df; --ink-mid:#ab919d; --ink-dim:#856875;
-  --accent:#e08aa6; --accent-soft:#e08aa626; --accent2:#d9b06a; --rx:#b79ad6; --tx:#e0a07e;
+[data-theme="vapor"]{
+  --bg:#49dab3; --panel:#f4efe0; --panel-2:#ece4d0; --line:#e5457f; --line-2:#d98fb0;
+  --ink:#123b37; --ink-mid:#3f605b; --ink-dim:#7a8a86;
+  --accent:#e5457f; --accent-soft:#e5457f26; --accent2:#0e9c90; --rx:#0e9c90; --tx:#e0982f;
 }
 *{box-sizing:border-box}
 html{scrollbar-color:var(--line-2) var(--bg)}
@@ -121,7 +117,7 @@ body{
 .seg button:last-child{border-right:0}
 .seg button:hover{color:var(--ink)}
 .seg button.on{background:var(--accent); color:#15161a; font-weight:600}
-[data-theme="phosphor"] .seg button.on,[data-theme="slate"] .seg button.on{color:#0e0f11}
+[data-theme="dark"] .seg button.on,[data-theme="amber"] .seg button.on{color:#0e0f11}
 .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:2px; vertical-align:middle}
 .dot.rx{background:var(--rx)} .dot.tx{background:var(--tx)}
 .find{
@@ -229,6 +225,11 @@ footer a:hover{color:var(--accent)}
   .stack{padding-bottom:50vh}
   .mast h1{font-size:24px}
 }
+/* --- protofun RJ switcher + secret-theme flourishes (homogenized) --- */
+.sw-rj{--protofun-w:21px;--protofun-h:31px;display:inline-block;line-height:0;color:var(--ink-mid);cursor:pointer;transition:color .15s}
+.sw-rj:hover{color:var(--accent)}
+:root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.28)}
+:root[data-theme="vapor"] body{background:url(assets/sakura-tile.webp) repeat, linear-gradient(160deg,#4fdfba 0%,#3fc8a4 60%,#57e3c0 100%);background-size:320px auto, cover;background-attachment:fixed}
 </style>
 </head>
 <body>
@@ -240,13 +241,7 @@ footer a:hover{color:var(--accent)}
     </h1>
     <div class="mast-right">
       <div class="switcher">
-        <div class="sw-themes" id="themeseg" role="group" aria-label="theme">
-          <button data-theme-btn="graphite" class="on" style="--c:#e0863c" title="Graphite" aria-label="Graphite theme"></button>
-          <button data-theme-btn="phosphor" style="--c:#7bbd8e" title="Phosphor" aria-label="Phosphor theme"></button>
-          <button data-theme-btn="slate" style="--c:#5fa8cc" title="Slate" aria-label="Slate theme"></button>
-          <button data-theme-btn="iris" style="--c:#a98cf0" title="Iris" aria-label="Iris theme"></button>
-          <button data-theme-btn="rose" style="--c:#e08aa6" title="Rose" aria-label="Rose theme"></button>
-        </div>
+        <protofun-toggle class="sw-rj" aria-label="Toggle theme: light, dark, amber, vapor"></protofun-toggle>
         <span class="sw-div"></span>
         <button class="sw-font" id="fontbtn" title="Cycle typeface">Aa</button>
       </div>
@@ -763,16 +758,6 @@ document.getElementById('dirseg').addEventListener('click',e=>{
   b.classList.add('on'); dir=b.dataset.dir; pinned=null; showHint(); render();
 });
 
-/* ---- theme toggle ---- */
-document.getElementById('themeseg').addEventListener('click',e=>{
-  const b=e.target.closest('button'); if(!b) return;
-  document.querySelectorAll('#themeseg button').forEach(x=>x.classList.remove('on'));
-  b.classList.add('on');
-  const t=b.dataset.themeBtn;
-  if(t==='graphite') document.documentElement.removeAttribute('data-theme');
-  else document.documentElement.setAttribute('data-theme',t);
-});
-
 /* ---- typeface cycler (subtle, top right) ----
    each option is a full fallback stack: installed Nerd Font / plain -> generic.
    nothing is fetched; whatever you have installed wins, else system mono.    */
@@ -811,5 +796,6 @@ find.addEventListener('keydown',e=>{ if(e.key==='Escape'){ find.value=''; applyF
 /* boot */
 render();
 </script>
+<script src="assets/protofun-toggle.js"></script>
 </body>
 </html>
