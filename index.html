@@ -51,6 +51,17 @@
   --ink:#123b37; --ink-mid:#3f605b; --ink-dim:#7a8a86;
   --accent:#e5457f; --accent-soft:#e5457f26; --accent2:#0e9c90; --rx:#0e9c90; --tx:#e0982f;
 }
+/* house modes: the site-wide Deep Dive skins (warm cream / neutral dark, house teal+orange) */
+[data-theme="house-light"]{
+  --bg:#F2F1EE; --panel:#FBFAF6; --panel-2:#ECEAE3; --line:#C9C5BB; --line-2:#B4AFA3;
+  --ink:#17150F; --ink-mid:#4A4744; --ink-dim:#8C877E;
+  --accent:#007870; --accent-soft:#00787024; --accent2:#33518C; --rx:#33518C; --tx:#E85000;
+}
+[data-theme="house-dark"]{
+  --bg:#121213; --panel:#1c1c1e; --panel-2:#232326; --line:#313135; --line-2:#3e3e42;
+  --ink:#ececea; --ink-mid:#a9a9a4; --ink-dim:#6f6f6b;
+  --accent:#08F9DF; --accent-soft:#08F9DF26; --accent2:#7fb2e0; --rx:#7fb2e0; --tx:#FF4D00;
+}
 *{box-sizing:border-box}
 html{scrollbar-color:var(--line-2) var(--bg)}
 body{
@@ -228,6 +239,9 @@ footer a:hover{color:var(--accent)}
 /* --- protofun RJ switcher + secret-theme flourishes (homogenized) --- */
 .sw-rj{--protofun-w:21px;--protofun-h:31px;display:inline-block;line-height:0;color:var(--ink-mid);cursor:pointer;transition:color .15s}
 .sw-rj:hover{color:var(--accent)}
+/* house modes: RJ wears teal, flips to orange on hover */
+[data-theme="house-light"] .sw-rj,[data-theme="house-dark"] .sw-rj{color:var(--accent)}
+[data-theme="house-light"] .sw-rj:hover,[data-theme="house-dark"] .sw-rj:hover{color:var(--tx)}
 :root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.28)}
 :root[data-theme="vapor"] body{background:linear-gradient(rgba(244,239,224,.55),rgba(244,239,224,.55)), url(assets/sakura-tile.webp) repeat, linear-gradient(160deg,#4fdfba 0%,#3fc8a4 60%,#57e3c0 100%);background-size:cover, 320px auto, cover;background-attachment:fixed}
 </style>
