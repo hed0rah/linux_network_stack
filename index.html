@@ -4,17 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Linux Networking Stack / Tunable Reference</title>
-<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
-<!-- fully self-contained: no external font requests. fonts resolve from your
-     locally installed families (Nerd Fonts / plain) with generic fallbacks. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"house-dark":"house-light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
 <style>
 /* ============================================================================
    linux networking stack :: tunable reference map
    typographic-spec-sheet treatment. hairline panels, dotted leaders, one accent.
-   fonts are referenced from local installs only (no network). the cycler offers
-   Hack / Fira Code / JetBrains / IBM Plex / 3270 / system, each a fallback stack.
-   to hard-embed a face for cross-machine portability, add an @font-face here
-   (base64 woff2) and prepend its family to --mono.
+   IBM Plex Mono from Google Fonts, the same face as the protocols-fun pages.
    ========================================================================== */
 :root{
   --bg:#E6EBEE;
@@ -32,7 +30,7 @@
   --tx:#C1501A;             /* egress / warm */
   --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   /* body mono: prefers your installed coding fonts (Nerd Font or plain), then generic */
-  --mono:"Hack Nerd Font Mono","Hack Nerd Font","Hack","FiraCode Nerd Font Mono","Fira Code","JetBrainsMono Nerd Font","JetBrains Mono",ui-monospace,"SFMono-Regular","Cascadia Code",Menlo,Consolas,monospace;
+  --mono:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
   /* display face: your locally installed 3270 Nerd Font, with mono fallback */
   --display:"3270 Nerd Font Propo","3270 Nerd Font","3270",ui-monospace,Menlo,Consolas,monospace;
 }
@@ -72,12 +70,19 @@ body{
 ::selection{background:var(--accent-soft)}
 
 /* ---- masthead ------------------------------------------------------------ */
-.mast{max-width:1180px; margin:0 auto; padding:40px 28px 0}
+.mast{max-width:1180px; margin:0 auto; padding:clamp(1.5rem,4vw,3.25rem) 28px 0}
 .head{border:1px solid var(--ink);font-family:var(--mono)}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--accent)}
 .head .title .sw-rj{--protofun-w:61px;--protofun-h:92px}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--ink-mid)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin:0.2rem 0 0}
+.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;display:flex;flex-direction:column;justify-content:center;gap:0.35rem}
+.head .stamp a{color:var(--ink-dim);text-decoration:none;transition:color .15s}
+.head .stamp a:hover{color:var(--accent)}
+@media(max-width:560px){.head .row{grid-template-columns:1fr}.head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left}
+  /* same phone gutter as the protocols-fun sheet */
+  .mast,.rule,.bar-controls,.wrap{padding-left:1rem;padding-right:1rem}}
 
 /* subtle icon-only theme + font switcher, top right */
 .switcher{display:flex; align-items:center; gap:12px}
@@ -90,12 +95,8 @@ body{
 .sw-themes button:hover{opacity:.85}
 .sw-themes button.on{opacity:1; box-shadow:0 0 0 2px var(--bg), 0 0 0 3px var(--c)}
 .sw-div{width:1px; height:16px; background:var(--line-2)}
-.sw-font{
-  font-family:var(--mono); font-size:13px; font-weight:600; line-height:1;
-  color:var(--ink-mid); background:transparent; border:1px solid var(--line-2);
-  border-radius:3px; padding:3px 8px; cursor:pointer; transition:.14s; min-width:34px;
-}
-.sw-font:hover{color:var(--ink); border-color:var(--accent)}
+.head .title protofun-mode{color:var(--ink-mid);transition:color .15s}
+.head .title protofun-mode:hover{color:var(--accent)}
 .rule{max-width:1180px; margin:22px auto 0; padding:0 28px}
 .rule .bar{height:3px; background:var(--accent)}
 .rule .bar::after{content:""; display:block; height:1px; background:var(--line); margin-top:5px}
@@ -224,10 +225,9 @@ footer a:hover{color:var(--accent)}
 .sw-rj{--protofun-w:21px;--protofun-h:31px;display:inline-block;line-height:0;color:var(--ink-mid);cursor:pointer;transition:color .15s}
 .sw-rj:hover{color:var(--accent)}
 /* house modes: RJ wears teal, flips to orange on hover */
-[data-theme="house-light"] .sw-rj{color:var(--tx)}
-[data-theme="house-dark"] .sw-rj{color:var(--accent)}
-[data-theme="house-light"] .sw-rj:hover{color:var(--accent)}
-[data-theme="house-dark"] .sw-rj:hover{color:var(--tx)}
+[data-theme="house-light"] .sw-rj,[data-theme="house-dark"] .sw-rj{color:var(--accent)}
+[data-theme="house-light"] .sw-rj:hover,[data-theme="house-dark"] .sw-rj:hover{color:var(--tx)}
+[data-theme="house-light"] .head .title,[data-theme="house-dark"] .head .title{border-left-color:var(--tx)}
 :root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.28)}
 :root[data-theme="vapor"] body{background:linear-gradient(rgba(244,239,224,.55),rgba(244,239,224,.55)), url(assets/sakura-tile.webp) repeat, linear-gradient(160deg,#4fdfba 0%,#3fc8a4 60%,#57e3c0 100%);background-size:cover, 320px auto, cover;background-attachment:fixed}
 </style>
@@ -236,12 +236,15 @@ footer a:hover{color:var(--accent)}
 
 <div class="mast">
   <div class="head">
-    <div class="title">
-      <div class="tt"><div class="sysmark">PROTOCOLS-FUN . KERNEL PATH</div><h1>Linux Networking Stack</h1></div>
-      <div class="switcher">
-        <button class="sw-font" id="fontbtn" title="Cycle typeface">Aa</button>
-        <protofun-toggle class="sw-rj" aria-label="Toggle theme"></protofun-toggle>
+    <div class="row">
+      <div class="title">
+        <div class="tt"><div class="sysmark">PROTOCOLS-FUN . KERNEL PATH</div><h1>Linux Networking Stack</h1></div>
+        <div class="switcher">
+          <protofun-mode></protofun-mode>
+          <protofun-toggle class="sw-rj" aria-label="Cycle theme"></protofun-toggle>
+        </div>
       </div>
+      <div class="stamp"><a href="https://hed0rah.github.io">hed0rah.github.io</a><a href="https://x.com/r3l0z">x.com/r3l0z</a></div>
     </div>
   </div>
 </div>
@@ -781,26 +784,6 @@ document.getElementById('dirseg').addEventListener('click',e=>{
   b.classList.add('on'); dir=b.dataset.dir; pinned=null; showHint(); render();
 });
 
-/* ---- typeface cycler (subtle, top right) ----
-   each option is a full fallback stack: installed Nerd Font / plain -> generic.
-   nothing is fetched; whatever you have installed wins, else system mono.    */
-const FONTS = [
-  {name:"Hack",        stack:"'Hack Nerd Font Mono','Hack Nerd Font','Hack',ui-monospace,monospace"},
-  {name:"Fira Code",   stack:"'FiraCode Nerd Font Mono','FiraCode Nerd Font','Fira Code',ui-monospace,monospace"},
-  {name:"JetBrains",   stack:"'JetBrainsMono Nerd Font Mono','JetBrainsMono Nerd Font','JetBrains Mono',ui-monospace,monospace"},
-  {name:"IBM Plex",    stack:"'BlexMono Nerd Font','IBM Plex Mono',ui-monospace,monospace"},
-  {name:"3270",        stack:"'3270 Nerd Font','3270',ui-monospace,monospace"},
-  {name:"System",      stack:"ui-monospace,'SFMono-Regular','Cascadia Code',Menlo,Consolas,monospace"},
-];
-let fi = 0;
-const fontbtn = document.getElementById('fontbtn');
-fontbtn.addEventListener('click',()=>{
-  fi = (fi+1) % FONTS.length;
-  const f = FONTS[fi];
-  document.documentElement.style.setProperty('--mono', f.stack);
-  fontbtn.style.fontFamily = f.stack;
-  fontbtn.title = 'Typeface: '+f.name+'  (click to cycle)';
-});
 
 /* ---- find / filter ---- */
 const find = document.getElementById('find');
@@ -819,7 +802,6 @@ find.addEventListener('keydown',e=>{ if(e.key==='Escape'){ find.value=''; applyF
 /* boot */
 render();
 </script>
-<footer><a href="https://hed0rah.github.io/">hed0rah.github.io</a> &middot; <a href="https://x.com/r3l0z">x.com/r3l0z</a></footer>
 <script src="assets/protofun-toggle.js"></script>
 </body>
 </html>
