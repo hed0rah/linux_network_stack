@@ -73,26 +73,11 @@ body{
 
 /* ---- masthead ------------------------------------------------------------ */
 .mast{max-width:1180px; margin:0 auto; padding:40px 28px 0}
-.mast-top{display:flex; align-items:flex-start; justify-content:space-between; gap:30px; flex-wrap:wrap}
-.mast h1{
-  font-family:var(--display); font-weight:700; font-size:34px; line-height:1.04;
-  margin:0; letter-spacing:.01em; color:var(--ink);
-}
-.mast h1 .thin{display:block; font-weight:400; font-size:14.5px; letter-spacing:.02em; color:var(--ink-mid); margin-top:11px; font-family:var(--mono)}
-.mast-right{display:flex; flex-direction:column; align-items:flex-end; gap:14px}
-.mast-meta{font-family:var(--mono); font-size:11.5px; line-height:1.85; color:var(--ink-dim); text-align:right; min-width:220px}
-.mast-meta .row{display:flex; justify-content:space-between; gap:18px}
-.mast-meta .k{color:var(--ink-dim)}
-.mast-meta .v{color:var(--ink-mid)}
-.mast-meta .v .accent2{color:var(--accent2)}
-.mast-links{display:flex; flex-direction:column; align-items:flex-end; gap:3px; text-align:right}
-.mast-links a{
-  font-family:var(--display); font-size:18px; letter-spacing:.04em;
-  color:var(--ink-mid); text-decoration:none; transition:.13s; line-height:1.25;
-}
-.mast-links a::before{content:"// "; color:var(--ink-dim)}
-.mast-links a:hover{color:var(--accent)}
-.mast-links a:hover::before{color:var(--accent2)}
+.head{border:1px solid var(--ink);font-family:var(--mono)}
+.head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--accent)}
+.head .title .sw-rj{--protofun-w:61px;--protofun-h:92px}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--ink-mid)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin:0.2rem 0 0}
 
 /* subtle icon-only theme + font switcher, top right */
 .switcher{display:flex; align-items:center; gap:12px}
@@ -234,7 +219,6 @@ footer a:hover{color:var(--accent)}
   .inspector{position:fixed; left:0; right:0; bottom:0; top:auto; z-index:40; padding:0; max-height:54vh; overflow:auto; box-shadow:0 -16px 40px rgba(0,0,0,.55)}
   .insp-card{border-radius:12px 12px 0 0; border-bottom:0}
   .stack{padding-bottom:50vh}
-  .mast h1{font-size:24px}
 }
 /* --- protofun RJ switcher + secret-theme flourishes (homogenized) --- */
 .sw-rj{--protofun-w:21px;--protofun-h:31px;display:inline-block;line-height:0;color:var(--ink-mid);cursor:pointer;transition:color .15s}
@@ -251,19 +235,12 @@ footer a:hover{color:var(--accent)}
 <body>
 
 <div class="mast">
-  <div class="mast-top">
-    <h1>Linux Networking Stack
-      <span class="thin">Tunable Reference Map / wire &harr; read() &middot; write()</span>
-    </h1>
-    <div class="mast-right">
+  <div class="head">
+    <div class="title">
+      <div class="tt"><div class="sysmark">PROTOCOLS-FUN . KERNEL PATH</div><h1>Linux Networking Stack</h1></div>
       <div class="switcher">
-        <protofun-toggle class="sw-rj" aria-label="Toggle theme: light, dark, amber, vapor"></protofun-toggle>
-        <span class="sw-div"></span>
         <button class="sw-font" id="fontbtn" title="Cycle typeface">Aa</button>
-      </div>
-      <div class="mast-links">
-        <a href="https://hed0rah.github.io/" target="_blank" rel="noopener">hed0rah.github.io</a>
-        <a href="https://x.com/r3l0z" target="_blank" rel="noopener">x.com/r3l0z</a>
+        <protofun-toggle class="sw-rj" aria-label="Toggle theme"></protofun-toggle>
       </div>
     </div>
   </div>
@@ -842,6 +819,7 @@ find.addEventListener('keydown',e=>{ if(e.key==='Escape'){ find.value=''; applyF
 /* boot */
 render();
 </script>
+<footer><a href="https://hed0rah.github.io/">hed0rah.github.io</a> &middot; <a href="https://x.com/r3l0z">x.com/r3l0z</a></footer>
 <script src="assets/protofun-toggle.js"></script>
 </body>
 </html>
